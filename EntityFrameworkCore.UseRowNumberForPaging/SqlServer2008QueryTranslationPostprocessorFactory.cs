@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
@@ -42,14 +41,21 @@ namespace EntityFrameworkCore.UseRowNumberForPaging
 
 			private class Offset2RowNumberConvertVisitor : ExpressionVisitor
 			{
-				private static readonly Func<SelectExpression, SqlExpression, string, ColumnExpression> GenerateOuterColumnAccessor;
+				private static readonly MethodInfo GenerateOuterColumnAccessorMethodInfo;
+				private static readonly Type GenerateOuterColumnAccessorDelegateType;
+				private static readonly FieldInfo TableReferencesFieldInfo;
 
 				static Offset2RowNumberConvertVisitor()
 				{
-					var method = typeof(SelectExpression).GetMethod("GenerateOuterColumn", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance, null, new Type[] { typeof(SqlExpression), typeof(string) }, null);
-					if (method?.ReturnType != typeof(ColumnExpression))
+					var tableReferenceExpressionType = typeof(SelectExpression).GetNestedType("TableReferenceExpression", BindingFlags.NonPublic);
+					System.Diagnostics.Debug.Assert(tableReferenceExpressionType != null);
+					var parameterTypes = new Type[] { tableReferenceExpressionType, typeof(SqlExpression), typeof(string), typeof(bool) };
+					GenerateOuterColumnAccessorMethodInfo = typeof(SelectExpression).GetMethod("GenerateOuterColumn", BindingFlags.NonPublic | BindingFlags.Instance, null, parameterTypes, null);
+					if ((GenerateOuterColumnAccessorMethodInfo?.ReturnType.IsAssignableTo(typeof(ColumnExpression))).GetValueOrDefault() == false)
 						throw new InvalidOperationException("SelectExpression.GenerateOuterColumn() is not found");
-					GenerateOuterColumnAccessor = (Func<SelectExpression, SqlExpression, string, ColumnExpression>)method.CreateDelegate(typeof(Func<SelectExpression, SqlExpression, string, ColumnExpression>));
+					GenerateOuterColumnAccessorDelegateType = Expression.GetDelegateType(GenerateOuterColumnAccessorMethodInfo.GetParameters().Select(p => p.ParameterType).Append(GenerateOuterColumnAccessorMethodInfo.ReturnType).ToArray());
+
+					TableReferencesFieldInfo = typeof(SelectExpression).GetField("_tableReferences", BindingFlags.NonPublic | BindingFlags.Instance);
 				}
 
 				private readonly Expression root;
@@ -96,10 +102,13 @@ namespace EntityFrameworkCore.UseRowNumberForPaging
 															   selectExpression.Alias);
 					var rowOrderings = oldOrderings.Count != 0 ? oldOrderings
 						: new[] { new OrderingExpression(new SqlFragmentExpression("(SELECT 1)"), true) };
-					_ = selectExpression.PushdownIntoSubquery();
+					selectExpression.PushdownIntoSubquery();
 					var subQuery = (SelectExpression)selectExpression.Tables[0];
 					var projection = new RowNumberExpression(Array.Empty<SqlExpression>(), rowOrderings, oldOffset.TypeMapping);
-					var left = GenerateOuterColumnAccessor(subQuery, projection, "row");
+					var generateOuterColumnAccessorDelegate = GenerateOuterColumnAccessorMethodInfo.CreateDelegate(GenerateOuterColumnAccessorDelegateType, subQuery);
+					var tableReferences = (IEnumerable<object>)TableReferencesFieldInfo.GetValue(selectExpression);
+					var tableReferenceExpression = tableReferences.Single();
+					var left = (ColumnExpression)generateOuterColumnAccessorDelegate.DynamicInvoke(tableReferenceExpression, projection, "row", true);
 					selectExpression.ApplyPredicate(sqlExpressionFactory.GreaterThan(left, oldOffset));
 					if (oldLimit != null)
 					{
