@@ -5,7 +5,9 @@
 [main-nuget]: https://www.nuget.org/packages/EntityFrameworkCore.UseRowNumberForPaging/
 [main-nuget-badge]: https://img.shields.io/nuget/v/EntityFrameworkCore.UseRowNumberForPaging.svg?style=flat-square&label=nuget
 
-Bring back support for [UseRowNumberForPaging](https://docs.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.infrastructure.sqlserverdbcontextoptionsbuilder.userownumberforpaging?view=efcore-3.0) in EntityFrameworkCore 6.0
+Bring back support for [UseRowNumberForPaging](https://docs.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.infrastructure.sqlserverdbcontextoptionsbuilder.userownumberforpaging?view=efcore-3.0) in EntityFrameworkCore 6.0/5.0
+
+If you are using EntityFrameworkCore 5.0 please use version 0.2
 
 # Usage
 
