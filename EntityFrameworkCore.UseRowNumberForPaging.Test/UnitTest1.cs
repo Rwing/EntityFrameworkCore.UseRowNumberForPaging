@@ -14,10 +14,10 @@ namespace EntityFrameworkCore.UseRowNumberForPaging.Test
             using (var dbContext = new UseRowNumberDbContext())
             {
                 var rawSql = dbContext.Blogs.Where(i => i.BlogId > 1).Skip(0).Take(10).ToQueryString();
-               rawSql.ShouldContain("ROW_NUMBER");
+                rawSql.ShouldContain("ROW_NUMBER");
             }
         }
-        
+
         [Fact]
         public void Test2()
         {

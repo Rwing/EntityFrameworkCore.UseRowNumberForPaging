@@ -97,9 +97,7 @@ namespace EntityFrameworkCore.UseRowNumberForPaging
 															   selectExpression.Having,
 															   orderings: newOrderings,
 															   limit: null,
-															   offset: null,
-															   selectExpression.IsDistinct,
-															   selectExpression.Alias);
+															   offset: null);
 					var rowOrderings = oldOrderings.Count != 0 ? oldOrderings
 						: new[] { new OrderingExpression(new SqlFragmentExpression("(SELECT 1)"), true) };
 					selectExpression.PushdownIntoSubquery();
