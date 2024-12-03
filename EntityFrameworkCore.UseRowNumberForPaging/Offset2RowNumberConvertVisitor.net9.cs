@@ -108,6 +108,8 @@ internal class Offset2RowNumberConvertVisitor(
         );
 
         // restore projection member binding lookup capabilities via reflection magic
+        var clientProjections = typeof(SelectExpression).GetField("_clientProjections", BindingFlags.NonPublic | BindingFlags.Instance);
+        clientProjections.SetValue(result, clientProjections.GetValue(selectExpression));
         var projectionMapping = typeof(SelectExpression).GetField("_projectionMapping", BindingFlags.NonPublic | BindingFlags.Instance);
         projectionMapping.SetValue(result, projectionMapping.GetValue(selectExpression));
         return result;

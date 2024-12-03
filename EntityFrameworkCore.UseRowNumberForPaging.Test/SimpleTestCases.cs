@@ -47,4 +47,18 @@ public class SimpleTestCases
         rawSql.ShouldContain("ORDER BY");
         rawSql.ShouldContain("TOP");
     }
+
+    [Fact]
+    public void With_Order_SplitQuery_UsesRowNumber()
+    {
+        using var dbContext = new UseRowNumberDbContext();
+        var rawSql = dbContext.Blogs.Include(b => b.Author).Where(i => i.BlogId > 1)
+            .OrderBy(a => a.Author.ContributingSince)
+            .OrderByDescending(o => o.Rating)
+            .Skip(30).Take(15)
+            .AsSplitQuery().ToQueryString();
+        rawSql.ShouldContain("ROW_NUMBER");
+        rawSql.ShouldContain("ORDER BY");
+        rawSql.ShouldContain("TOP");
+    }
 }

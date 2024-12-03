@@ -1,27 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
-namespace EntityFrameworkCore.UseRowNumberForPaging
+namespace EntityFrameworkCore.UseRowNumberForPaging;
+
+public class UseRowNumberDbContext : DbContext
 {
-    public class UseRowNumberDbContext : DbContext
-    {
-        public DbSet<Blog> Blogs { get; set; }
+    public DbSet<Blog> Blogs { get; set; }
+    public DbSet<Author> Authors { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseSqlServer(
-                @"Server=(localdb)\mssqllocaldb;Database=Blogging;Integrated Security=True", i => i.UseRowNumberForPaging());
-        }
-    }
-
-    public class Blog
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        public int BlogId { get; set; }
-        public string Url { get; set; }
-        public int Rating { get; set; }
+        optionsBuilder.UseSqlServer(
+            @"Server=(localdb)\mssqllocaldb;Database=Blogging;Integrated Security=True", i => i.UseRowNumberForPaging());
     }
+}
+
+public class Blog
+{
+    public int BlogId { get; set; }
+    public string Url { get; set; }
+    public int Rating { get; set; }
+    public virtual Author Author { get; set; }
+}
+public class Author
+{
+    public int AuthorId { get; set; }
+    public string Name { get; set; }
+    public DateOnly ContributingSince { get; set; }
+    public virtual List<Blog> Blogs { get; set; }
 }
